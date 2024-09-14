@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 
 const planets = [];
+const moons = [];
+
 class Planet{
 	constructor(radius, orbitalRadius,pos, color,segments, acceleration){
 		this.radius = radius;
@@ -197,6 +199,10 @@ planets.push(venus)
 
 const earth = new Planet(2.5, 35,2,0x0000ff, 32, 0.01);
 planets.push(earth);
+const moon = new Moon(earth, 2, 10, 0, 0x333333,32,0.01);
+const nmoon = new Moon(earth, 2, 20, 1, 0x333333,32,0.1);
+moons.push(moon);
+moons.push(nmoon);
 
 const mars = new Planet(1.5, 45,3, 0xff0000, 32, 0.01);
 planets.push(mars);
@@ -217,36 +223,33 @@ const pluto = new Planet(0.5, 155,8, 0x666666, 32,0.01);
 planets.push(pluto);
 
 
-function init(){
+function initPlanets(){
 	for(let i = 0; i < planets.length; i++){
-		planets[i].createMesh();
 		scene.add(planets[i].createMesh());
 		scene.add(planets[i].createOrbit());
 	}
 }
 
+function initMoons(){
+	for(let i = 0; i < moons.length; i++){
+		moons[i].createMesh();
+		moons[i].createOrbit();
+	}
+}
 
-
-
-//const n =  new THREE.Vector3(earth.getCoordinates().x, earth.getCoordinates().y + 20, earth.getCoordinates().y);
 function animate(){
 	requestAnimationFrame(animate);
-	earth.orbit()
-	moon.orbit();
-	nmoon.orbit()
-	mars.orbit()
-	mars.getPlanetMesh.rotateY(0.01)
+	for(let i = 0; i < planets.length; i++){
+		planets[i].orbit();
+	}
+	for(let i = 0; i < moons.length; i++){
+		moons[i].orbit();
+	}
 	controls.update();
 	renderer.render(scene, cam);
 }
-init();
-const moon = new Moon(earth, 2, 10, 0, 0x333333,32,0.01);
-moon.createMesh();
-moon.createOrbit()
-
-const nmoon = new Moon(earth, 2, 20, 1, 0x333333,32,0.1);
-nmoon.createMesh();
-nmoon.createOrbit()
+initPlanets();
+initMoons()
 
 animate();
 
