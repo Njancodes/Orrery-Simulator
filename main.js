@@ -5,9 +5,10 @@ const planets = [];
 const moons = [];
 
 class Planet{
-	constructor(radius, orbitalRadius,pos, color,segments, acceleration){
+	constructor(radius, orbitalRadius, height,pos, color,segments, acceleration){
 		this.radius = radius;
 		this.oradius = orbitalRadius;
+		this.height = height;
 		this.color = color;
 		this.pos = pos
 		this.segments = segments;
@@ -39,7 +40,7 @@ class Planet{
 	}
 	createMesh(){
 		const curve = new THREE.CatmullRomCurve3(
-			[new THREE.Vector3(this.oradius, 0 ,0),
+			[new THREE.Vector3(this.oradius, this.height ,0),
 			new THREE.Vector3(this.oradius,(-13 + -2 * this.pos),0),
 			new THREE.Vector3(0, (-13 + -2 * this.pos), 0),],
 			false,
@@ -53,7 +54,7 @@ class Planet{
 		const geometry = new THREE.SphereGeometry(this.radius, this.segments, this.segments);
 		const material = new THREE.MeshBasicMaterial({color:this.color});
 		const mesh = new THREE.Mesh(geometry, material);
-		mesh.position.set(this.oradius, 0 ,0)
+		mesh.position.set(this.oradius, this.height ,0)
 		tmesh.add(mesh);
 		this.setMesh = tmesh;
 		return this.getMesh;
@@ -66,7 +67,7 @@ class Planet{
 			const theta = (i / this.segments) * Math.PI * 2; // Angle in radians
 			const x = this.oradius * Math.cos(theta); // X position
 			const z = this.oradius * Math.sin(theta); // Z position (Y = 0 for a flat orbit)
-			points.push(new THREE.Vector3(x, 0, z)); // Push the points into the array
+			points.push(new THREE.Vector3(x, this.height, z)); // Push the points into the array
 		}
 
 		// Create geometry from points
@@ -83,10 +84,11 @@ class Planet{
 }
 
 class Moon{
-	constructor(planet, radius, orbitalRadius,pos, color,segments, acceleration){
+	constructor(planet, radius, orbitalRadius, height,pos, color,segments, acceleration){
 		this.planet = planet,
 		this.radius = radius;
 		this.oradius = orbitalRadius;
+		this.height = height;
 		this.color = color;
 		this.pos = pos
 		this.segments = segments;
@@ -109,7 +111,7 @@ class Moon{
 	}
 	createMesh(){
 		const curve = new THREE.CatmullRomCurve3(
-			[new THREE.Vector3(this.oradius, 0 ,0),
+			[new THREE.Vector3(this.oradius, this.height ,0),
 			new THREE.Vector3(this.oradius,(-3 + -2 * this.pos),0),
 			new THREE.Vector3(0, (-3 + -2 * this.pos), 0),],
 			false,
@@ -123,7 +125,7 @@ class Moon{
 		const geometry = new THREE.SphereGeometry(this.radius, this.segments, this.segments);
 		const material = new THREE.MeshBasicMaterial({color:this.color});
 		const mesh = new THREE.Mesh(geometry, material);
-		mesh.position.set(this.oradius, 0 ,0)
+		mesh.position.set(this.oradius, this.height ,0)
 		tmesh.add(mesh);
 		this.setMesh = tmesh;
 		this.planet.getPlanetMesh.add(this.getMesh);
@@ -136,7 +138,7 @@ class Moon{
 			const theta = (i / this.segments) * Math.PI * 2; // Angle in radians
 			const x = this.oradius * Math.cos(theta); // X position
 			const z = this.oradius * Math.sin(theta); // Z position (Y = 0 for a flat orbit)
-			points.push(new THREE.Vector3(x, 0, z)); // Push the points into the array
+			points.push(new THREE.Vector3(x, this.height, z)); // Push the points into the array
 		}
 
 		// Create geometry from points
@@ -191,35 +193,33 @@ sunSupport.position.set(0,-15,0);
 scene.add(sunSupport);
 
 //Instantiate the planets
-const mercury = new Planet(1, 15, 0,  0x555555, 32, 0.01);
+const mercury = new Planet(1, 15, 0, 0,  0x555555, 32, 0.01);
 planets.push(mercury);
 
-const venus = new Planet(2, 25,1, 0xaaaa00, 32, 0.01);
+const venus = new Planet(2, 25, 0,1, 0xaaaa00, 32, 0.01);
 planets.push(venus)
 
-const earth = new Planet(2.5, 35,2,0x0000ff, 32, 0.01);
+const earth = new Planet(2.5, 35, 0,2,0x0000ff, 32, 0.01);
 planets.push(earth);
-const moon = new Moon(earth, 2, 10, 0, 0x333333,32,0.01);
-const nmoon = new Moon(earth, 2, 20, 1, 0x333333,32,0.1);
+const moon = new Moon(earth, 2, 10 ,0, 0, 0x333333,32,0.01);
 moons.push(moon);
-moons.push(nmoon);
 
-const mars = new Planet(1.5, 45,3, 0xff0000, 32, 0.01);
+const mars = new Planet(1.5, 45, 0,3, 0xff0000, 32, 0.01);
 planets.push(mars);
 
-const jupiter = new Planet(10, 85,4, 0xd2b48c, 32, 0.01);
+const jupiter = new Planet(10, 85, 0,4, 0xd2b48c, 32, 0.01);
 planets.push(jupiter);
 
-const saturn = new Planet(9.5, 105,5, 0x444400, 32, 0.01);
+const saturn = new Planet(9.5, 105, 0,5, 0x444400, 32, 0.01);
 planets.push(saturn);
 
-const uranus = new Planet(5.5, 125,6, 0xeeffee, 32, 0.01);
+const uranus = new Planet(5.5, 125, 0,6, 0xeeffee, 32, 0.01);
 planets.push(uranus);
 
-const neptune = new Planet(5, 140,7, 0x33ff33, 32, 0.01);
-planets.push(neptune);
+const neptune = new Planet(5, 140, 0,7, 0x33ff33, 32, 0.01);
+planets.push(neptune)
 
-const pluto = new Planet(0.5, 155,8, 0x666666, 32,0.01);
+const pluto = new Planet(0.5, 155, 0,8, 0x666666, 32,0.01);
 planets.push(pluto);
 
 
