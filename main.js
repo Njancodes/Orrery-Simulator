@@ -48,7 +48,7 @@ class Planet{
 			0.1
 		)
 		//Create a tube along the points (or the curve mentioned above)
-		const tgeometry = new THREE.TubeGeometry( curve, 30, .3, 10, false );
+		const tgeometry = new THREE.TubeGeometry( curve, 30, .2, 10, false );
 		const tmaterial = new THREE.MeshBasicMaterial( { color: this.color } );
 		const tmesh = new THREE.Mesh( tgeometry, tmaterial );
 		const geometry = new THREE.SphereGeometry(this.radius, this.segments, this.segments);
@@ -74,7 +74,7 @@ class Planet{
 		const geometry = new THREE.BufferGeometry().setFromPoints(points);
 
 		// Create a material for the orbit line
-		const material = new THREE.LineBasicMaterial({ color: 0xffffff });
+		const material = new THREE.LineBasicMaterial({ color: this.color });
 
 		// Create a line object using geometry and material
 		const orbitLine = new THREE.Line(geometry, material);
@@ -145,7 +145,7 @@ class Moon{
 		const geometry = new THREE.BufferGeometry().setFromPoints(points);
 
 		// Create a material for the orbit line
-		const material = new THREE.LineBasicMaterial({ color: 0xffffff });
+		const material = new THREE.LineBasicMaterial({ color: this.color });
 
 		// Create a line object using geometry and material
 		const orbitLine = new THREE.Line(geometry, material);
@@ -193,33 +193,33 @@ sunSupport.position.set(0,-15,0);
 scene.add(sunSupport);
 
 //Instantiate the planets
-const mercury = new Planet(1, 15, 0, 0,  0x555555, 32, 0.01);
+const mercury = new Planet(1, 15, 0, 0,  0x555555, 32, 0.1);
 planets.push(mercury);
 
-const venus = new Planet(2, 25, 0,1, 0xaaaa00, 32, 0.01);
+const venus = new Planet(2.5, 25, 0,1, 0xaaaa00, 32, 0.073);
 planets.push(venus)
 
-const earth = new Planet(2.5, 35, 0,2,0x0000ff, 32, 0.01);
+const earth = new Planet(2.6, 35, 10,2,0x0000ff, 32, 0.062);
 planets.push(earth);
-const moon = new Moon(earth, 2, 10 ,0, 0, 0x333333,32,0.01);
+const moon = new Moon(earth, 2, 10 ,0, 0, 0x333333,32,0.0021);
 moons.push(moon);
 
-const mars = new Planet(1.5, 45, 0,3, 0xff0000, 32, 0.01);
+const mars = new Planet(1.4, 45, 0,3, 0xff0000, 32, 0.050);
 planets.push(mars);
 
-const jupiter = new Planet(10, 85, 0,4, 0xd2b48c, 32, 0.01);
+const jupiter = new Planet(28, 65, 30,4, 0xd2b48c, 32, 0.027);
 planets.push(jupiter);
 
-const saturn = new Planet(9.5, 105, 0,5, 0x444400, 32, 0.01);
+const saturn = new Planet(23, 120, 40,5, 0x444400, 32, 0.020);
 planets.push(saturn);
 
-const uranus = new Planet(5.5, 125, 0,6, 0xeeffee, 32, 0.01);
+const uranus = new Planet(10, 155, 20,6, 0xeeffee, 32, 0.014);
 planets.push(uranus);
 
-const neptune = new Planet(5, 140, 0,7, 0x33ff33, 32, 0.01);
+const neptune = new Planet(10, 175, 10,7, 0x33ff33, 32, 0.011);
 planets.push(neptune)
 
-const pluto = new Planet(0.5, 155, 0,8, 0x666666, 32,0.01);
+const pluto = new Planet(0.5, 185, 0,8, 0x666666, 32,0.010);
 planets.push(pluto);
 
 
