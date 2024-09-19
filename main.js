@@ -4,26 +4,57 @@ import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js';
 const planets = [];
 const moons = [];
 
+class Orbit{
+	constructor(semiMajorAxis,orbitalInclination,argumentOfPerigee,eccentricity,ascendingNode){
+		this.a = semiMajorAxis;  // Semi-major axis
+		this.e = eccentricity;  // Eccentricity
+		this.i = THREE.MathUtils.degToRad(orbitalInclination);  // Inclination in radians
+		this.omega = THREE.MathUtils.degToRad(argumentOfPerigee);  // Argument of periapsis
+		this.Omega = THREE.MathUtils.degToRad(ascendingNode);  // Longitude of ascending node
+		this.nu = 0;  // Initial true anomaly
+	}
+	set setTrueAnomaly(n){
+		this.nu = n;
+	}
+	get getTrueAnomaly(){
+		return this.nu
+	}
+	applyOrbitalRotations(position) {
+		// Create Euler rotations
+		const inclinationRotation = new THREE.Matrix4().makeRotationX(this.i);
+		const periapsisRotation = new THREE.Matrix4().makeRotationY(this.omega);
+		const ascendingNodeRotation = new THREE.Matrix4().makeRotationY(this.Omega);
+		// Apply rotations
+		position.applyMatrix4(inclinationRotation);
+		position.applyMatrix4(periapsisRotation);
+		position.applyMatrix4(ascendingNodeRotation);
+		return position;
+	}
+	
+	calculatePosition() {
+		const r = (this.a * (1 - this.e ** 2)) / (1 + this.e * Math.cos(this.nu));  // Radial distance
+		const xOrbital = r * Math.cos(this.nu);  // x in the orbital plane
+		const yOrbital = r * Math.sin(this.nu);  // y in the orbital plane
+		return new THREE.Vector3(xOrbital, 0, yOrbital);  // z is zero in the orbital plane
+	}
+}
+
 class Body{
-	constructor(central_object_mesh, radius, orbital_radius, height, pos, color, segments, acceleration){
+	constructor(central_object_mesh, radius,pos, color, segments, acceleration, orbit){
 		this.centre = central_object_mesh;
 		this.radius = radius;
-		this.oradius = orbital_radius;
-		this.height = height;
 		this.color = color;
 		this.pos = pos;
 		this.segments = segments;
 		this.acc = acceleration;
 		this.angle = 0;
+		this.orbit = orbit
 	}
-	orbit(){
-		if(this.getPlanetMesh){
-			this.angle += this.acc;
-			this.getPlanetMesh.position.x = this.oradius * Math.cos(this.angle);
-			this.getPlanetMesh.position.z = this.oradius * Math.sin(this.angle);
-		}else{
-			console.log("No")
-		}
+	propagate(){
+		this.orbit.setTrueAnomaly =  this.orbit.getTrueAnomaly + 0.01;
+		let position = this.orbit.calculatePosition();
+		position = this.orbit.applyOrbitalRotations(position);
+		this.getPlanetMesh.position.copy(position);
 	}
 	set setTubeMesh(mesh){
 		this.tubeMesh = mesh;
@@ -55,29 +86,20 @@ class Body{
 		const mesh = new THREE.Mesh(geometry, material);
 		this.setPlanetMesh = mesh;
 		this.centre.add(this.getPlanetMesh);
-		mesh.position.set(this.oradius, this.height ,0);
 	}
 	createOrbit(){
 		const points = [];
-
-		// Generate points for the orbit (based on a circular path)
+    
 		for (let i = 0; i <= this.segments; i++) {
-			const theta = (i / this.segments) * Math.PI * 2; // Angle in radians
-			const x = this.oradius * Math.cos(theta); // X position
-			const z = this.oradius * Math.sin(theta); // Z position (Y = 0 for a flat orbit)
-			points.push(new THREE.Vector3(x, this.height, z)); // Push the points into the array
+			this.orbit.setTrueAnomaly = (i / this.segments) * 2 * Math.PI;  // True anomaly (from 0 to 2π)
+			let position = this.orbit.calculatePosition();
+			position = this.orbit.applyOrbitalRotations(position);
+			points.push(position);  // Set Y to 0 for XZ plane orbit
 		}
-
-		// Create geometry from points
 		const geometry = new THREE.BufferGeometry().setFromPoints(points);
-
-		// Create a material for the orbit line
-		const material = new THREE.LineBasicMaterial({ color: this.color });
-
-		// Create a line object using geometry and material
-		const orbitLine = new THREE.Line(geometry, material);
-
-		this.centre.add(orbitLine);
+		const material = new THREE.LineBasicMaterial({color:this.color});
+		const orbitalLine = new THREE.Line(geometry, material);
+		this.centre.add(orbitalLine);
 	}
 }
 
@@ -108,7 +130,7 @@ light.position.set(0,0,0);
 scene.add(light);
 
 //Sun
-const sunGeo = new THREE.SphereGeometry(10,32,32);
+const sunGeo = new THREE.SphereGeometry(20,32,32);
 const sunMat = new THREE.MeshBasicMaterial({color:0xffff00});
 const sun = new THREE.Mesh(sunGeo, sunMat);
 scene.add(sun);
@@ -120,32 +142,40 @@ sunSupport.position.set(0,-15,0);
 scene.add(sunSupport);
 
 //Instantiate the planets
-const mercury = new Body(sun,1, 15, 0, 0,  0x555555, 32, 0.1);
+const mercuryOrbit = new Orbit(40,7.005,29.124,0.2056,48.331)
+const mercury = new Body(sun,1, 0,  0x555555, 32, 0.1, mercuryOrbit);
 planets.push(mercury);
 
-const venus = new Body(sun, 2.5, 25, 0,1, 0xaaaa00, 32, 0.073);
+const venusOrbit = new Orbit(60, 3.394, 54.884, 0.0067, 76.680);
+const venus = new Body(sun, 2.5, 1, 0xaaaa00, 32, 0.073, venusOrbit);
 planets.push(venus)
 
-const earth = new Body(sun, 2.6, 35, 10,2,0x0000ff, 32, 0.062);
+const earthOrbit = new Orbit(80, 0.00, 114.2, 0.0167, 348.74)
+const earth = new Body(sun, 2.6,2,0x0000ff, 32, 0.062, earthOrbit);
 planets.push(earth);
 
-
-const mars = new Body(sun, 1.4, 45, 0,3, 0xff0000, 32, 0.050);
+const marsOrbit = new Orbit(100, 1.85, 286.5, 0.0934, 49.56);
+const mars = new Body(sun, 1.4, 3, 0xff0000, 32, 0.050, marsOrbit);
 planets.push(mars);
 
-const jupiter = new Body(sun, 28, 65, 30,4, 0xd2b48c, 32, 0.027);
+const jupiterOrbit = new Orbit(150, 2.31, 273.9, 0.0489, 100.45);
+const jupiter = new Body(sun, 28,4, 0xd2b48c, 32, 0.027, jupiterOrbit);
 planets.push(jupiter);
 
-const saturn = new Body(sun, 23, 120, 40,5, 0x444400, 32, 0.020);
+const saturnOrbit = new Orbit(200, 2.49, 339.4, 0.0565, 113.71);
+const saturn = new Body(sun, 23, 5, 0x444400, 32, 0.020,saturnOrbit);
 planets.push(saturn);
 
-const uranus = new Body(sun, 10, 155, 20,6, 0xeeffee, 32, 0.014);
+const uranusOrbit = new Orbit(220, 0.77, 96.9, 0.0463, 74.02)
+const uranus = new Body(sun, 10, 6, 0xeeffee, 32, 0.014, uranusOrbit);
 planets.push(uranus);
 
-const neptune = new Body(sun, 10, 175, 10,7, 0x33ff33, 32, 0.011);
+const neptuneOrbit = new Orbit(240, 1.77, 253.0, 0.0097, 131.72)
+const neptune = new Body(sun, 10,7, 0x33ff33, 32, 0.011, neptuneOrbit);
 planets.push(neptune)
 
-const pluto = new Body(sun, 0.5, 185, 0,8, 0x666666, 32,0.010);
+const plutoOrbit = new Orbit(250, 17.14, 113.74, 0.248, 110.30)
+const pluto = new Body(sun, 0.5, 8, 0x666666, 32,0.010, plutoOrbit);
 planets.push(pluto);
 
 
@@ -154,6 +184,7 @@ function initPlanets(){
 		planets[i].createMesh();
 		planets[i].createOrbit();
 	}
+
 }
 
 function initMoons(){
@@ -166,17 +197,19 @@ function initMoons(){
 function animate(){
 	requestAnimationFrame(animate);
 	for(let i = 0; i < planets.length; i++){
-		planets[i].orbit();
+		planets[i].propagate();
 	}
 	for(let i = 0; i < moons.length; i++){
-		moons[i].orbit();
+		moons[i].propagate();
 	}
 	controls.update();
 	renderer.render(scene, cam);
 }
 initPlanets();
-const moon = new Body(earth.getPlanetMesh, 2, 10 ,0, 0, 0x333333,32,0.0021);
+const moonOrbit = new Orbit(10, 5.15, 134.9, 0.0549, 125.08)
+const moon = new Body(earth.getPlanetMesh, 2, 0, 0x333333,32,0.0021, moonOrbit);
 moons.push(moon);
+moon.createOrbit()
 initMoons()
 
 animate();
