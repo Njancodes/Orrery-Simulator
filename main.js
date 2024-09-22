@@ -40,7 +40,8 @@ class Orbit{
 }
 
 class Body{
-	constructor(central_object_mesh, radius,pos, color, segments, acceleration, orbit){
+	constructor(central_object_mesh, radius,pos, color, segments, acceleration, orbit, name){
+		this.name = name;
 		this.centre = central_object_mesh;
 		this.radius = radius;
 		this.color = color;
@@ -51,13 +52,25 @@ class Body{
 		this.orbit = orbit
 	}
 	propagate(){
-		this.orbit.setTrueAnomaly =  this.orbit.getTrueAnomaly + 0.01;
-		let position = this.orbit.calculatePosition();
-		position = this.orbit.applyOrbitalRotations(position);
-		this.getPlanetMesh.position.copy(position);
+		this.orbit.setTrueAnomaly =  this.orbit.getTrueAnomaly + this.acc;
+		const oldHeight = this.centre.position.distanceTo(this.getPosition)
+		let pos = this.orbit.calculatePosition();
+		pos = this.orbit.applyOrbitalRotations(pos);
+		const newHeight = this.centre.position.distanceTo(pos)
+		const axis = new THREE.Vector3(0, 1, 0);
+		this.getHorTubeMesh.quaternion.setFromUnitVectors(axis, pos.clone().normalize());
+		this.getHorTubeMesh.position.copy(pos.clone().multiplyScalar(.5));
+		this.getHorTubeMesh.scale.y = newHeight/oldHeight
+		this.getPlanetMesh.position.copy(pos);
 	}
-	set setTubeMesh(mesh){
+	set setHorTubeMesh(mesh){
 		this.tubeMesh = mesh;
+	}
+	set setPosition(position){
+		this.position = position;
+	}
+	get getPosition(){
+		return this.position;
 	}
 	set setPlanetMesh(mesh){
 		this.planetMesh = mesh;
@@ -65,25 +78,44 @@ class Body{
 	get getPlanetMesh(){
 		return this.planetMesh;
 	}
-	get getTubeMesh(){
+	get getHorTubeMesh(){
 		return this.tubeMesh;
 	}
 	createMesh(){
+		const globalCentrePos = new THREE.Vector3();
+		this.centre.getWorldPosition(globalCentrePos);
+		
+		let position = this.orbit.calculatePosition();
+		this.setPosition = position
+		this.setPosition = this.orbit.applyOrbitalRotations(this.getPosition);
+		console.log(`${this.name}: X: ${this.getPosition.x.toFixed(2)} Y:${this.getPosition.y.toFixed(2)}`);
+		console.log(`${this.name}'s Centre: X: ${this.centre.position.x.toFixed(2)} Y:${this.centre.position.y.toFixed(2)}`);
+
+		const horStandGeo = new THREE.CylinderGeometry(this.radius/10, this.radius/10, this.getPosition.length(), 32,32);
+		const horStandMat = new THREE.MeshBasicMaterial({color:this.color});
+		const horStand = new THREE.Mesh(horStandGeo, horStandMat);
+		const axis = new THREE.Vector3(0, 1, 0);
+		horStand.position.copy(this.getPosition.clone().multiplyScalar(0.5));
+		horStand.quaternion.setFromUnitVectors(axis, this.getPosition.clone().normalize());
+		this.setHorTubeMesh = horStand;
+		this.centre.add(horStand)
+		// const strtPos = new THREE.Vector3(position.x, position.y - height/2 - this.radius, position.z);
 		// const curve = new THREE.CatmullRomCurve3(
-		// 	[new THREE.Vector3(this.oradius, this.height ,0),
-		// 	new THREE.Vector3(this.oradius,(-13 + -2 * this.pos),0),
-		// 	new THREE.Vector3(0, (-13 + -2 * this.pos), 0),],
+		// 	[strtPos,
+		// 	new THREE.Vector3(position.x,(position.y - height/2 - this.radius) - 3,position.z),
+		// 	new THREE.Vector3(position.x + 5,(position.y - height/2 - this.radius) - 3,position.z),],
 		// 	false,
 		// 	"catmullrom",
 		// 	0.1
 		// )
-		// //Create a tube along the points (or the curve mentioned above)
-		// const tgeometry = new THREE.TubeGeometry( curve, 30, .2, 10, false );
-		// const tmaterial = new THREE.MeshBasicMaterial( { color: this.color } );
-		// const tmesh = new THREE.Mesh( tgeometry, tmaterial );
+
+		
+
+
 		const geometry = new THREE.SphereGeometry(this.radius, this.segments, this.segments);
 		const material = new THREE.MeshBasicMaterial({color:this.color});
 		const mesh = new THREE.Mesh(geometry, material);
+		mesh.position.copy(position)
 		this.setPlanetMesh = mesh;
 		this.centre.add(this.getPlanetMesh);
 	}
@@ -96,12 +128,15 @@ class Body{
 			position = this.orbit.applyOrbitalRotations(position);
 			points.push(position);  // Set Y to 0 for XZ plane orbit
 		}
+
 		const geometry = new THREE.BufferGeometry().setFromPoints(points);
 		const material = new THREE.LineBasicMaterial({color:this.color});
 		const orbitalLine = new THREE.Line(geometry, material);
 		this.centre.add(orbitalLine);
 	}
 }
+
+
 
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -130,7 +165,7 @@ light.position.set(0,0,0);
 scene.add(light);
 
 //Sun
-const sunGeo = new THREE.SphereGeometry(20,32,32);
+const sunGeo = new THREE.SphereGeometry(10,32,32);
 const sunMat = new THREE.MeshBasicMaterial({color:0xffff00});
 const sun = new THREE.Mesh(sunGeo, sunMat);
 scene.add(sun);
@@ -143,39 +178,39 @@ scene.add(sunSupport);
 
 //Instantiate the planets
 const mercuryOrbit = new Orbit(40,7.005,29.124,0.2056,48.331)
-const mercury = new Body(sun,1, 0,  0x555555, 32, 0.1, mercuryOrbit);
+const mercury = new Body(sun,0.3, 0,  0x555555, 32, 0.1, mercuryOrbit, "Mercury");
 planets.push(mercury);
 
 const venusOrbit = new Orbit(60, 3.394, 54.884, 0.0067, 76.680);
-const venus = new Body(sun, 2.5, 1, 0xaaaa00, 32, 0.073, venusOrbit);
+const venus = new Body(sun, 2.5, 1, 0xaaaa00, 32, 0.073, venusOrbit, "Venus");
 planets.push(venus)
 
 const earthOrbit = new Orbit(80, 0.00, 114.2, 0.0167, 348.74)
-const earth = new Body(sun, 2.6,2,0x0000ff, 32, 0.062, earthOrbit);
+const earth = new Body(sun, 2.6,2,0x0000ff, 32, 0.062, earthOrbit, "Earth");
 planets.push(earth);
 
 const marsOrbit = new Orbit(100, 1.85, 286.5, 0.0934, 49.56);
-const mars = new Body(sun, 1.4, 3, 0xff0000, 32, 0.050, marsOrbit);
+const mars = new Body(sun, 1.4, 3, 0xff0000, 32, 0.050, marsOrbit, "Mars");
 planets.push(mars);
 
 const jupiterOrbit = new Orbit(150, 2.31, 273.9, 0.0489, 100.45);
-const jupiter = new Body(sun, 28,4, 0xd2b48c, 32, 0.027, jupiterOrbit);
+const jupiter = new Body(sun, 4,4, 0xd2b48c, 32, 0.027, jupiterOrbit, "Jupiter");
 planets.push(jupiter);
 
 const saturnOrbit = new Orbit(200, 2.49, 339.4, 0.0565, 113.71);
-const saturn = new Body(sun, 23, 5, 0x444400, 32, 0.020,saturnOrbit);
+const saturn = new Body(sun, 3.5, 5, 0x444400, 32, 0.020,saturnOrbit, "Saturn");
 planets.push(saturn);
 
 const uranusOrbit = new Orbit(220, 0.77, 96.9, 0.0463, 74.02)
-const uranus = new Body(sun, 10, 6, 0xeeffee, 32, 0.014, uranusOrbit);
+const uranus = new Body(sun, 2, 6, 0xeeffee, 32, 0.014, uranusOrbit, "Uranus");
 planets.push(uranus);
 
 const neptuneOrbit = new Orbit(240, 1.77, 253.0, 0.0097, 131.72)
-const neptune = new Body(sun, 10,7, 0x33ff33, 32, 0.011, neptuneOrbit);
+const neptune = new Body(sun, 2.6,7, 0x33ff33, 32, 0.011, neptuneOrbit, "Neptune");
 planets.push(neptune)
 
 const plutoOrbit = new Orbit(250, 17.14, 113.74, 0.248, 110.30)
-const pluto = new Body(sun, 0.5, 8, 0x666666, 32,0.010, plutoOrbit);
+const pluto = new Body(sun, 0.5, 8, 0x666666, 32,0.010, plutoOrbit, "Pluto");
 planets.push(pluto);
 
 
@@ -205,11 +240,11 @@ function animate(){
 	controls.update();
 	renderer.render(scene, cam);
 }
+
 initPlanets();
 const moonOrbit = new Orbit(10, 5.15, 134.9, 0.0549, 125.08)
-const moon = new Body(earth.getPlanetMesh, 2, 0, 0x333333,32,0.0021, moonOrbit);
+const moon = new Body(earth.getPlanetMesh, 2, 0, 0x333333,32,0.0021, moonOrbit, "Moon");
 moons.push(moon);
-moon.createOrbit()
 initMoons()
 
 animate();
