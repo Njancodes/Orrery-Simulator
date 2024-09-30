@@ -54,19 +54,23 @@ class Body{
 		this.angle = 0;
 		this.orbit = orbit
 	}
+
 	propagate(){
 		this.orbit.setTrueAnomaly =  this.orbit.getTrueAnomaly + this.acc;
 		let pos = this.orbit.calculatePosition();
 		pos = this.orbit.applyOrbitalRotations(pos);
 		this.centre.getWorldPosition(this.globalCentrepos);
+		this.getPlanetMesh.position.copy(pos);
 		this.getPlanetMesh.getWorldPosition(this.globalPlanetpos);
+		this.globalHorEndpos.set(this.globalPlanetpos.x, this.globalPlanetpos.y - 19, this.globalPlanetpos.z)
+		this.getVerTubeMesh.position.set(pos.x, pos.y - 19, pos.z);
+		this.getVerTubeMesh.scale.z = this.globalHorEndpos.distanceTo(this.globalPlanetpos);
+		this.getVerTubeMesh.lookAt(this.globalPlanetpos);
 		this.getHorTubeMesh.position.set(0,-19,0);
 		this.getHorTubeMesh.scale.z = this.globalCentrepos.distanceTo(this.globalPlanetpos);
-		this.getHorTubeMesh.lookAt(this.globalPlanetpos.x, this.globalPlanetpos.y - 19, this.globalPlanetpos.z);
-		this.getVerTubeMesh.position.set(pos.x, pos.y - 19, pos.z);
-		this.getVerTubeMesh.scale.z = (new THREE.Vector3(this.globalPlanetpos.x, this.globalPlanetpos.y - 19, this.globalPlanetpos.z)).distanceTo(this.globalPlanetpos);
-		this.getVerTubeMesh.lookAt(this.globalPlanetpos);
-		this.getPlanetMesh.position.copy(pos);
+		this.getHorTubeMesh.lookAt(this.globalHorEndpos);
+
+
 	}
 	set setHorTubeMesh(mesh){
 		this.tubeMesh = mesh;
@@ -93,7 +97,6 @@ class Body{
 		return this.VtubeMesh;
 	}
 	createMesh(){
-		
 		let position = this.orbit.calculatePosition();
 		this.setPosition = position
 		this.setPosition = this.orbit.applyOrbitalRotations(this.getPosition);
@@ -131,8 +134,8 @@ class Body{
 		this.centre.getWorldPosition(this.globalCentrepos);
 		this.getPlanetMesh.getWorldPosition(this.globalPlanetpos);
 		this.globalHorEndpos.set(this.globalPlanetpos.x, this.globalPlanetpos.y - 19, this.globalPlanetpos.z)
-		this.centre.add(horStand)
 		this.centre.add(verStand)
+		this.centre.add(horStand)
 		horStand.position.set(0,-19,0);
 		verStand.position.set(position.x, position.y - 19, position.z);
 		horStand.scale.z = this.globalCentrepos.distanceTo(this.globalPlanetpos);
@@ -255,28 +258,21 @@ function initMoons(){
 
 function animate(){
 	requestAnimationFrame(animate);
-	// for(let i = 0; i < planets.length; i++){
-	// 	planets[i].propagate();
-	// }
-	// for(let i = 0; i < moons.length; i++){
-	// 	moons[i].propagate();
-	// }
-
-	moon.propagate()
-	//earth.propagate()
+	for(let i = 0; i < planets.length; i++){
+		planets[i].propagate();
+	}
+	for(let i = 0; i < moons.length; i++){
+		moons[i].propagate();
+	}
 	controls.update();
 	renderer.render(scene, cam);
 }
 
-// initPlanets();
-earth.createMesh();
-earth.createOrbit();
+initPlanets();
 const moonOrbit = new Orbit(10, 5.15, 134.9, 0.0549, 125.08)
-const moon = new Body(earth.getPlanetMesh, 2, 0, 0x333333,32,0.001, moonOrbit, "Moon");
+const moon = new Body(earth.getPlanetMesh, 2, 0, 0x333333,32,0.1, moonOrbit, "Moon");
 moons.push(moon);
-moon.createMesh()
-moon.createOrbit()
-// initMoons()
+initMoons()
 
 animate();
 
