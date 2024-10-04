@@ -1,9 +1,11 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js'
-
+import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
+import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
 
 const planets = [];
 const moons = [];
+const astronomical_unit_conversion = 35;
 
 class Orbit{
 	constructor(semiMajorAxis,orbitalInclination,argumentOfPerigee,eccentricity,ascendingNode){
@@ -43,13 +45,12 @@ class Orbit{
 
 
 class Body{
-	constructor(central_object_mesh, radius,pos, color, segments, acceleration, orbit, name){
+	constructor(central_object_mesh, mesh,segments, pos, acceleration, orbit, name){
 		this.name = name;
 		this.centre = central_object_mesh;
-		this.radius = radius;
-		this.color = color;
 		this.pos = pos;
-		this.segments = segments;
+		this.mesh = mesh
+		this.segments = segments
 		this.acc = acceleration;
 		this.angle = 0;
 		this.orbit = orbit
@@ -62,11 +63,11 @@ class Body{
 		this.centre.getWorldPosition(this.globalCentrepos);
 		this.getPlanetMesh.position.copy(pos);
 		this.getPlanetMesh.getWorldPosition(this.globalPlanetpos);
-		this.globalHorEndpos.set(this.globalPlanetpos.x, this.globalPlanetpos.y - 19, this.globalPlanetpos.z)
-		this.getVerTubeMesh.position.set(pos.x, pos.y - 19, pos.z);
+		this.globalHorEndpos.set(this.globalPlanetpos.x, this.globalPlanetpos.y - 19  - this.pos, this.globalPlanetpos.z)
+		this.getVerTubeMesh.position.set(pos.x, pos.y - 19  - this.pos, pos.z);
 		this.getVerTubeMesh.scale.z = this.globalHorEndpos.distanceTo(this.globalPlanetpos);
 		this.getVerTubeMesh.lookAt(this.globalPlanetpos);
-		this.getHorTubeMesh.position.set(0,-19,0);
+		this.getHorTubeMesh.position.set(0,-19 - this.pos,0);
 		this.getHorTubeMesh.scale.z = this.globalCentrepos.distanceTo(this.globalPlanetpos);
 		this.getHorTubeMesh.lookAt(this.globalHorEndpos);
 
@@ -100,28 +101,13 @@ class Body{
 		let position = this.orbit.calculatePosition();
 		this.setPosition = position
 		this.setPosition = this.orbit.applyOrbitalRotations(this.getPosition);
-		// const strtPos = new THREE.Vector3(position.x, position.y - height/2 - this.radius, position.z);
-		// const curve = new THREE.CatmullRomCurve3(
-		// 	[strtPos,
-		// 	new THREE.Vector3(position.x,(position.y - height/2 - this.radius) - 3,position.z),
-		// 	new THREE.Vector3(position.x + 5,(position.y - height/2 - this.radius) - 3,position.z),],
-		// 	false,
-		// 	"catmullrom",
-		// 	0.1
-		// )
 
-
-		const geometry = new THREE.SphereGeometry(this.radius, this.segments, this.segments);
-		const material = new THREE.MeshBasicMaterial({color:this.color});
-		const mesh = new THREE.Mesh(geometry, material);
-		mesh.position.copy(position)
-		this.setPlanetMesh = mesh;
-		console.log(`The position of the calculated of the ${this.name}: X: ${position.x} Y: ${position.y} Z: ${position.z}`);
-		console.log(`The positions of ${this.name}: X: ${mesh.position.x} Y: ${mesh.position.y} Z: ${mesh.position.z}`);
+		this.mesh.position.copy(position)
+		this.setPlanetMesh = this.mesh;
 		this.centre.add(this.getPlanetMesh);
 		
 		const horStandGeo = new THREE.CylinderGeometry(1, 1, 1).translate(0, 0.5, 0).rotateX(Math.PI * 0.5);
-		const horStandMat = new THREE.MeshBasicMaterial({color:this.color});
+		const horStandMat = new THREE.MeshBasicMaterial({color:this.mesh.material.color});
 		const horStand = new THREE.Mesh(horStandGeo, horStandMat);
 		const verStand = new THREE.Mesh(horStandGeo, horStandMat);
 		verStand.scale.set(0.1,0.1,1);
@@ -133,14 +119,14 @@ class Body{
 
 		this.centre.getWorldPosition(this.globalCentrepos);
 		this.getPlanetMesh.getWorldPosition(this.globalPlanetpos);
-		this.globalHorEndpos.set(this.globalPlanetpos.x, this.globalPlanetpos.y - 19, this.globalPlanetpos.z)
+		this.globalHorEndpos.set(this.globalPlanetpos.x, this.globalPlanetpos.y - 19 - this.pos, this.globalPlanetpos.z)
 		this.centre.add(verStand)
 		this.centre.add(horStand)
-		horStand.position.set(0,-19,0);
-		verStand.position.set(position.x, position.y - 19, position.z);
+		horStand.position.set(0,-19 - this.pos,0);
+		verStand.position.set(position.x, position.y - 19 - this.pos, position.z);
 		horStand.scale.z = this.globalCentrepos.distanceTo(this.globalPlanetpos);
 		verStand.scale.z = this.globalHorEndpos.distanceTo(this.globalPlanetpos);
-		horStand.lookAt(this.globalPlanetpos.x, this.globalPlanetpos.y - 19, this.globalPlanetpos.z);
+		horStand.lookAt(this.globalPlanetpos.x, this.globalPlanetpos.y - 19 - this.pos, this.globalPlanetpos.z);
 		verStand.lookAt(this.globalPlanetpos);
 		this.setHorTubeMesh = horStand;
 		this.setVerTubeMesh = verStand;
@@ -157,7 +143,7 @@ class Body{
 		}
 
 		const geometry = new THREE.BufferGeometry().setFromPoints(points);
-		const material = new THREE.LineBasicMaterial({color:this.color});
+		const material = new THREE.LineBasicMaterial({color:this.mesh.material.color});
 		const orbitalLine = new THREE.Line(geometry, material);
 		this.centre.add(orbitalLine);
 	}
@@ -172,7 +158,7 @@ document.body.appendChild(canvas);
 
 const scene = new THREE.Scene();
 
-const cam = new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight, 0.1, 1000);
+const cam = new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight, 0.1, 2000);
 
 cam.position.z = 30;
 
@@ -203,43 +189,117 @@ const sunSupport = new THREE.Mesh(sunSupportGeo, sunSupportMat);
 sunSupport.position.set(0,-15,0);
 scene.add(sunSupport);
 
+const fontLoader = new FontLoader();
+
+
+const newButtonGeo = new THREE.BoxGeometry(30,20,10,32,32,32);
+const newButtonMat = new THREE.MeshBasicMaterial({color:0x555555});
+const newButtonMesh = new THREE.Mesh(newButtonGeo, newButtonMat)
+newButtonMesh.rotateX(Math.PI/2)
+const newButtonOrbit = new Orbit(1.5*astronomical_unit_conversion,7.005,29.124,0,48.331)
+const newButton = new Body(sun,newButtonMesh,32,0,0.01,newButtonOrbit,"NewButton");
+newButton.createMesh();
+newButton.createOrbit()
+
+const loadButtonGeo = new THREE.BoxGeometry(30,20,10,32,32,32);
+const loadButtonMat = new THREE.MeshBasicMaterial({color:0x555555});
+const loadButtonMesh = new THREE.Mesh(loadButtonGeo, loadButtonMat)
+loadButtonMesh.rotateX(Math.PI/2)
+const loadButtonOrbit = new Orbit(3*astronomical_unit_conversion,10,29.124,0,48.331)
+const loadButton = new Body(sun,loadButtonMesh,32,0,-0.005,loadButtonOrbit,"NewButton");
+loadButton.createMesh();
+loadButton.createOrbit()
+fontLoader.load('./fonts/League Spartan_Regular.json', function(font){
+	const createText = new TextGeometry( "Create\n Orrery", {
+
+		font: font,
+
+		size: 5,
+		depth: 5,
+		curveSegments: 32,
+
+		bevelThickness: 2,
+		bevelSize: 2,
+		bevelEnabled: false
+
+	} );
+	const loadText = new TextGeometry( "Load\n Orrery", {
+
+		font: font,
+
+		size: 5,
+		depth: 5,
+		curveSegments: 32,
+
+		bevelThickness: 2,
+		bevelSize: 2,
+		bevelEnabled: false
+
+	} );
+
+	createText.computeBoundingBox();
+	loadText.computeBoundingBox();
+
+	const centerOffsetC = - 0.5 * ( createText.boundingBox.max.x - createText.boundingBox.min.x );
+	const centerOffsetL = - 0.5 * ( loadText.boundingBox.max.x - loadText.boundingBox.min.x );
+
+	const createTextMesh = new THREE.Mesh( createText, new THREE.MeshBasicMaterial({color:0xffffff}) );
+	const loadTextMesh = new THREE.Mesh( loadText, new THREE.MeshBasicMaterial({color:0xffffff}) );
+
+
+
+	newButtonMesh.add(createTextMesh);
+	loadButtonMesh.add(loadTextMesh);
+
+	createTextMesh.position.x = centerOffsetC;
+	createTextMesh.position.y = -4;
+	createTextMesh.position.z = -1;
+	createTextMesh.rotateX(Math.PI)
+	loadTextMesh.position.x = centerOffsetL;
+	loadTextMesh.position.y = -4;
+	loadTextMesh.position.z = -1;
+	loadTextMesh.rotateX(Math.PI)
+	
+})
+
+
+
 //Instantiate the planets
-const mercuryOrbit = new Orbit(40,7.005,29.124,0.2056,48.331)
-const mercury = new Body(sun,0.3, 0,  0x555555, 32, 0.005, mercuryOrbit, "Mercury");
-planets.push(mercury);
+// const mercuryOrbit = new Orbit(.4*astronomical_unit_conversion,7.005,29.124,0.2056,48.331)
+// const mercury = new Body(sun,0.3, 0,  0x555555, 32, 0.005, mercuryOrbit, "Mercury");
+// planets.push(mercury);
 
-const venusOrbit = new Orbit(60, 3.394, 54.884, 0.0067, 76.680);
-const venus = new Body(sun, 2.5, 1, 0xaaaa00, 32, 0.073, venusOrbit, "Venus");
-planets.push(venus)
+// const venusOrbit = new Orbit(.7*astronomical_unit_conversion, 3.394, 54.884, 0.0067, 76.680);
+// const venus = new Body(sun, 2.5, 1, 0xaaaa00, 32, 0.073, venusOrbit, "Venus");
+// planets.push(venus)
 
-const earthOrbit = new Orbit(80, 0.00, 114.2, 0.0167, 348.74)
-const earth = new Body(sun, 2.6,2,0x0000ff, 32, 0.001, earthOrbit, "Earth");
-planets.push(earth);
+// const earthOrbit = new Orbit(astronomical_unit_conversion, 0.00, 114.2, 0.0167, 348.74)
+// const earth = new Body(sun, 2.6,2,0x0000ff, 32, 0.001, earthOrbit, "Earth");
+// planets.push(earth);
 
-const marsOrbit = new Orbit(100, 1.85, 286.5, 0.0934, 49.56);
-const mars = new Body(sun, 1.4, 3, 0xff0000, 32, 0.050, marsOrbit, "Mars");
-planets.push(mars);
+// const marsOrbit = new Orbit(1.5*astronomical_unit_conversion, 1.85, 286.5, 0.0934, 49.56);
+// const mars = new Body(sun, 1.4, 3, 0xff0000, 32, 0.050, marsOrbit, "Mars");
+// planets.push(mars);
 
-const jupiterOrbit = new Orbit(150, 2.31, 273.9, 0.0489, 100.45);
-const jupiter = new Body(sun, 4,4, 0xd2b48c, 32, 0.027, jupiterOrbit, "Jupiter");
-planets.push(jupiter);
+// const jupiterOrbit = new Orbit(5.2*astronomical_unit_conversion, 2.31, 273.9, 0.0489, 100.45);
+// const jupiter = new Body(sun, 4,4, 0xd2b48c, 32, 0.027, jupiterOrbit, "Jupiter");
+// planets.push(jupiter);
 
-const saturnOrbit = new Orbit(200, 2.49, 339.4, 0.0565, 113.71);
-const saturn = new Body(sun, 3.5, 5, 0x444400, 32, 0.020,saturnOrbit, "Saturn");
-planets.push(saturn);
+// const saturnOrbit = new Orbit(9.5*astronomical_unit_conversion, 2.49, 339.4, 0.0565, 113.71);
+// const saturn = new Body(sun, 3.5, 5, 0x444400, 32, 0.020,saturnOrbit, "Saturn");
+// planets.push(saturn);
 
-const uranusOrbit = new Orbit(220, 0.77, 96.9, 0.0463, 74.02)
-const uranus = new Body(sun, 2, 6, 0xeeffee, 32, 0.014, uranusOrbit, "Uranus");
-planets.push(uranus);
+// const uranusOrbit = new Orbit(19.1*astronomical_unit_conversion, 0.77, 96.9, 0.0463, 74.02)
+// const uranus = new Body(sun, 2, 6, 0xeeffee, 32, 0.014, uranusOrbit, "Uranus");
+// planets.push(uranus);
 
-const neptuneOrbit = new Orbit(240, 1.77, 253.0, 0.0097, 131.72)
-const neptune = new Body(sun, 2.6,7, 0x33ff33, 32, 0.011, neptuneOrbit, "Neptune");
-planets.push(neptune)
+// const neptuneOrbit = new Orbit(30*astronomical_unit_conversion, 1.77, 253.0, 0.0097, 131.72)
+// const neptune = new Body(sun, 2.6,7, 0x33ff33, 32, 0.011, neptuneOrbit, "Neptune");
+// planets.push(neptune)
 
-const plutoOrbit = new Orbit(250, 17.14, 113.74, 0.248, 110.30)
-const pluto = new Body(sun, 0.5, 8, 0x666666, 32,0.010, plutoOrbit, "Pluto");
-planets.push(pluto);
-
+// const plutoOrbit = new Orbit(39*astronomical_unit_conversion, 17.14, 113.74, 0.248, 110.30)
+// const pluto = new Body(sun, 0.5, 8, 0x666666, 32,0.010, plutoOrbit, "Pluto");
+// planets.push(pluto);
 
 function initPlanets(){
 	for(let i = 0; i < planets.length; i++){
@@ -264,15 +324,17 @@ function animate(){
 	for(let i = 0; i < moons.length; i++){
 		moons[i].propagate();
 	}
+	newButton.propagate()
+	loadButton.propagate()
 	controls.update();
 	renderer.render(scene, cam);
 }
 
-initPlanets();
-const moonOrbit = new Orbit(10, 5.15, 134.9, 0.0549, 125.08)
-const moon = new Body(earth.getPlanetMesh, 2, 0, 0x333333,32,0.1, moonOrbit, "Moon");
-moons.push(moon);
-initMoons()
+// initPlanets();
+// const moonOrbit = new Orbit(10, 5.15, 134.9, 0.0549, 125.08)
+// const moon = new Body(earth.getPlanetMesh, 2, 0, 0x333333,32,0.1, moonOrbit, "Moon");
+// moons.push(moon);
+// initMoons()
 
 animate();
 
