@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
+import { InteractionManager } from 'three.interactive';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
+import {CSS2DRenderer, CSS2DObject} from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 
 const planets = [];
 const moons = [];
@@ -156,9 +158,23 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 const canvas = renderer.domElement
 document.body.appendChild(canvas);
 
+const htmlrenderer = new CSS2DRenderer();
+htmlrenderer.setSize(window.innerWidth, window.innerHeight);
+htmlrenderer.domElement.style.position = 'absolute'
+htmlrenderer.domElement.style.top = '0px';
+htmlrenderer.domElement.style.pointerEvents = 'none';
+document.body.appendChild(htmlrenderer.domElement);
+
 const scene = new THREE.Scene();
+const createScene = new THREE.Scene();
+const loadScene = new THREE.Scene();
+const scenes = [scene, createScene, loadScene];
+let sceneIndex = 0;
+
 
 const cam = new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight, 0.1, 2000);
+
+const interactionManager = new InteractionManager(renderer, cam, canvas);
 
 cam.position.z = 30;
 
@@ -177,7 +193,8 @@ const light = new THREE.PointLight(0xffffff, 1, 100);
 light.position.set(0,0,0);
 scene.add(light);
 
-//Sun
+// Central Object (size, height of the column, material, mesh)
+
 const sunGeo = new THREE.SphereGeometry(10,32,32);
 const sunMat = new THREE.MeshBasicMaterial({color:0xffff00});
 const sun = new THREE.Mesh(sunGeo, sunMat);
@@ -209,15 +226,49 @@ const loadButtonOrbit = new Orbit(3*astronomical_unit_conversion,10,29.124,0,48.
 const loadButton = new Body(sun,loadButtonMesh,32,0,-0.005,loadButtonOrbit,"NewButton");
 loadButton.createMesh();
 loadButton.createOrbit()
+
+const btn = document.createElement('button');
+const btnMesh = new CSS2DObject(btn);
+const modal = document.getElementById("centralObjectModal");
+const closeModal = document.getElementById("closeModal");
+
+closeModal.onclick = function() {
+	modal.style.display = "none";
+	createScene.add(btnMesh);
+}
+window.onclick = function(event) {
+	if (event.target === modal) {
+	  modal.style.display = "none";
+	  createScene.add(btnMesh);
+	}
+}
+const form = document.getElementById("centralObjectForm");
+form.onsubmit = function(event) {
+	event.preventDefault();
+	const size = document.getElementById("size").value;
+	const height = document.getElementById("height").value;
+	const texture = document.getElementById("texture").files[0];
+	const model = document.getElementById("model").files[0];
+
+	console.log("Central Object Properties:");
+	console.log("Size (Radius):", size);
+	console.log("Height of Column:", height);
+	console.log("Texture File:", texture);
+	console.log("Model File:", model);
+
+	// Process the input data as needed (e.g., apply changes in Three.js scene)
+
+	// Close the modal after submission
+	modal.style.display = "none";
+}
+
 fontLoader.load('./fonts/League Spartan_Regular.json', function(font){
 	const createText = new TextGeometry( "Create\n Orrery", {
 
 		font: font,
-
 		size: 5,
 		depth: 5,
 		curveSegments: 32,
-
 		bevelThickness: 2,
 		bevelSize: 2,
 		bevelEnabled: false
@@ -263,6 +314,26 @@ fontLoader.load('./fonts/League Spartan_Regular.json', function(font){
 })
 
 
+newButtonMesh.addEventListener('click',(event)=>{
+	console.log("Create")
+	sceneIndex = 1
+	renderer.setClearColor(0xffffff);
+	console.log("Hi")
+	btn.addEventListener("click",()=>{
+		createScene.remove(btnMesh)
+		modal.style.display = "flex";
+	})
+	btn.textContent = "Create Central Object";
+
+	createScene.add(btnMesh);
+	htmlrenderer.domElement.style.pointerEvents = 'all';
+})
+loadButtonMesh.addEventListener('click',(event)=>{
+	console.log("Load")
+	sceneIndex = 2
+})
+interactionManager.add(newButtonMesh);
+interactionManager.add(loadButtonMesh);
 
 //Instantiate the planets
 // const mercuryOrbit = new Orbit(.4*astronomical_unit_conversion,7.005,29.124,0.2056,48.331)
@@ -301,41 +372,14 @@ fontLoader.load('./fonts/League Spartan_Regular.json', function(font){
 // const pluto = new Body(sun, 0.5, 8, 0x666666, 32,0.010, plutoOrbit, "Pluto");
 // planets.push(pluto);
 
-function initPlanets(){
-	for(let i = 0; i < planets.length; i++){
-		planets[i].createMesh();
-		planets[i].createOrbit();
-	}
-
-}
-
-function initMoons(){
-	for(let i = 0; i < moons.length; i++){
-		moons[i].createMesh();
-		moons[i].createOrbit();
-	}
-}
-
 function animate(){
 	requestAnimationFrame(animate);
-	for(let i = 0; i < planets.length; i++){
-		planets[i].propagate();
-	}
-	for(let i = 0; i < moons.length; i++){
-		moons[i].propagate();
-	}
 	newButton.propagate()
 	loadButton.propagate()
+	interactionManager.update();
 	controls.update();
-	renderer.render(scene, cam);
+	renderer.render(scenes[sceneIndex], cam);
+	htmlrenderer.render(scenes[sceneIndex], cam);
 }
 
-// initPlanets();
-// const moonOrbit = new Orbit(10, 5.15, 134.9, 0.0549, 125.08)
-// const moon = new Body(earth.getPlanetMesh, 2, 0, 0x333333,32,0.1, moonOrbit, "Moon");
-// moons.push(moon);
-// initMoons()
-
 animate();
-
-
