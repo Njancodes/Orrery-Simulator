@@ -12,33 +12,44 @@
       }
     /* Modal container */
       .modal {
-        display: none;
-        position: fixed;
-        z-index: 1;
+        display: none; /* Hidden by default */
+        position: fixed; /* Stay in place */
+        z-index: 1; /* Sit on top */
         left: 0;
         top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        justify-content: center;
-        align-items: center;
+        width: 100%; /* Full width */
+        height: 100%; /* Full height */
+        overflow: hidden; /* Disable scroll outside the modal */
+        background-color: rgba(0, 0, 0, 0.4); /* Black with opacity */
       }
 
       /* Modal content */
       .modal-content {
-        background-color: #fefefe;
+        position: relative;
+        margin: 10% auto; /* Center the modal */
         padding: 20px;
+        width: 80%;
+        max-height: 80vh; /* Limit height to 80% of the viewport height */
+        background-color: white;
         border-radius: 10px;
-        width: 400px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+      }
+
+      .modal-body {
+        max-height: 60vh; /* Adjust this height as needed */
+        overflow-y: auto; /* Enable vertical scrolling */
+        padding-right: 10px; /* Add padding for scrollbar spacing */
       }
 
       /* Close button */
       .close {
-        float: right;
-        font-size: 24px;
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        font-size: 30px;
+        font-weight: bold;
         cursor: pointer;
-      }
+        }
 
       /* Input fields styling */
       input[type="text"], input[type="number"], input[type="file"] {
@@ -71,30 +82,8 @@
     </style>
   </head>
   <body>
-
-      <!-- The Modal -->
-      <div id="centralObjectModal" class="modal">
-        <div class="modal-content">
-          <span class="close" id="closeModal">&times;</span>
-          <h2>Set Central Object Properties</h2>
-          
-          <form id="centralObjectForm">
-            <label for="size">Size (Radius):</label>
-            <input type="number" id="size" name="size" placeholder="Enter size (e.g., 10)">
-
-            <label for="height">Height of Column:</label>
-            <input type="number" id="height" name="height" placeholder="Enter column height (e.g., 20)">
-
-            <label for="texture">Texture:</label>
-            <input type="file" id="texture" name="texture" accept="image/*">
-
-            <label for="model">3D Model (optional):</label>
-            <input type="file" id="model" name="model" accept=".obj, .gltf, .fbx">
-
-            <button type="submit" class="submit-btn">Submit</button>
-          </form>
-        </div>
-      </div>
+    <input type="file" id="modelInput" style="display:none" accept=".glb,.gltf,.obj" />
+    <input type="file" id="modelPlanetInput" style="display:none" accept=".glb,.gltf,.obj" />
     <script type="module" src="/main.js"></script>
   </body>
 </html>

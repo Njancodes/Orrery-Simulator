@@ -79,9 +79,6 @@
       <h2>Set Central Object Properties</h2>
       
       <form id="centralObjectForm">
-        <label for="size">Size (Radius):</label>
-        <input type="number" id="size" name="size" placeholder="Enter size (e.g., 10)">
-
         <label for="height">Height of Column:</label>
         <input type="number" id="height" name="height" placeholder="Enter column height (e.g., 20)">
 
@@ -123,13 +120,11 @@
     const form = document.getElementById("centralObjectForm");
     form.onsubmit = function(event) {
       event.preventDefault();
-      const size = document.getElementById("size").value;
       const height = document.getElementById("height").value;
       const texture = document.getElementById("texture").files[0];
       const model = document.getElementById("model").files[0];
 
       console.log("Central Object Properties:");
-      console.log("Size (Radius):", size);
       console.log("Height of Column:", height);
       console.log("Texture File:", texture);
       console.log("Model File:", model);

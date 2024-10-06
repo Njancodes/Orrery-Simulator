@@ -3,10 +3,13 @@ import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls.js'
 import { FontLoader } from 'three/examples/jsm/loaders/FontLoader.js';
 import { InteractionManager } from 'three.interactive';
 import { TextGeometry } from 'three/examples/jsm/geometries/TextGeometry.js';
-import {CSS2DRenderer, CSS2DObject} from 'three/examples/jsm/renderers/CSS2DRenderer.js'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import * as dat from 'dat.gui';
 
 const planets = [];
+const prevAcc = [];
 const moons = [];
+let planetIndex = -1;
 const astronomical_unit_conversion = 35;
 
 class Orbit{
@@ -17,6 +20,21 @@ class Orbit{
 		this.omega = THREE.MathUtils.degToRad(argumentOfPerigee);  // Argument of periapsis
 		this.Omega = THREE.MathUtils.degToRad(ascendingNode);  // Longitude of ascending node
 		this.nu = 0;  // Initial true anomaly
+	}
+	set setSMA(sma){
+		this.a = sma
+	}
+	set setAN(an){
+		this.Omega = an
+	}
+	set setE(ece){
+		this.e = ece
+	}
+	set setAOP(aop){
+		this.omega = aop
+	}
+	set setOI(oi){
+		this.i = oi
 	}
 	set setTrueAnomaly(n){
 		this.nu = n;
@@ -47,17 +65,20 @@ class Orbit{
 
 
 class Body{
-	constructor(central_object_mesh, mesh,segments, pos, acceleration, orbit, name){
+	constructor(central_object_mesh, mesh, color,segments, pos, acceleration, orbit, name){
 		this.name = name;
 		this.centre = central_object_mesh;
 		this.pos = pos;
 		this.mesh = mesh
+		this.color = color;
 		this.segments = segments
 		this.acc = acceleration;
 		this.angle = 0;
 		this.orbit = orbit
 	}
-
+	removeMesh(mesh){
+		this.centre.remove(mesh);
+	}
 	propagate(){
 		this.orbit.setTrueAnomaly =  this.orbit.getTrueAnomaly + this.acc;
 		let pos = this.orbit.calculatePosition();
@@ -75,6 +96,9 @@ class Body{
 
 
 	}
+	set setName(na){
+		this.name = na
+	}
 	set setHorTubeMesh(mesh){
 		this.tubeMesh = mesh;
 	}
@@ -84,20 +108,38 @@ class Body{
 	set setPosition(position){
 		this.position = position;
 	}
+	set setPos(pos){
+		this.pos = pos
+	}
 	get getPosition(){
 		return this.position;
 	}
 	set setPlanetMesh(mesh){
-		this.planetMesh = mesh;
+		this.mesh = mesh;
 	}
 	get getPlanetMesh(){
-		return this.planetMesh;
+		return this.mesh;
+	}
+	set setOrbitalLine(line){
+		this.orbitalLine = line;
+	}
+	get getOrbitalLine(){
+		return this.orbitalLine;
 	}
 	get getHorTubeMesh(){
 		return this.tubeMesh;
 	}
 	get getVerTubeMesh(){
 		return this.VtubeMesh;
+	}
+	set setAcc(ac){
+		this.acc  = ac
+	}
+	get getAcc(){
+		return this.acc
+	}
+	set setColor(col){
+		this.color = col
 	}
 	createMesh(){
 		let position = this.orbit.calculatePosition();
@@ -109,12 +151,11 @@ class Body{
 		this.centre.add(this.getPlanetMesh);
 		
 		const horStandGeo = new THREE.CylinderGeometry(1, 1, 1).translate(0, 0.5, 0).rotateX(Math.PI * 0.5);
-		const horStandMat = new THREE.MeshBasicMaterial({color:this.mesh.material.color});
+		const horStandMat = new THREE.MeshBasicMaterial({color:this.color});
 		const horStand = new THREE.Mesh(horStandGeo, horStandMat);
 		const verStand = new THREE.Mesh(horStandGeo, horStandMat);
 		verStand.scale.set(0.1,0.1,1);
 		horStand.scale.set(0.1, 0.1, 1);
-
 		this.globalCentrepos = new THREE.Vector3();
 		this.globalPlanetpos = new THREE.Vector3();
 		this.globalHorEndpos = new THREE.Vector3();
@@ -136,7 +177,7 @@ class Body{
 	}
 	createOrbit(){
 		const points = [];
-    
+		console.log("Anotehr Heaven Reached")
 		for (let i = 0; i <= this.segments; i++) {
 			this.orbit.setTrueAnomaly = (i / this.segments) * 2 * Math.PI;  // True anomaly (from 0 to 2π)
 			let position = this.orbit.calculatePosition();
@@ -145,25 +186,18 @@ class Body{
 		}
 
 		const geometry = new THREE.BufferGeometry().setFromPoints(points);
-		const material = new THREE.LineBasicMaterial({color:this.mesh.material.color});
-		const orbitalLine = new THREE.Line(geometry, material);
-		this.centre.add(orbitalLine);
+		const material = new THREE.LineBasicMaterial({color:this.color});
+		this.setOrbitalLine = new THREE.Line(geometry, material);
+		this.centre.add(this.getOrbitalLine);
 	}
 }
 
 
-
+const gui = new dat.GUI();
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 const canvas = renderer.domElement
 document.body.appendChild(canvas);
-
-const htmlrenderer = new CSS2DRenderer();
-htmlrenderer.setSize(window.innerWidth, window.innerHeight);
-htmlrenderer.domElement.style.position = 'absolute'
-htmlrenderer.domElement.style.top = '0px';
-htmlrenderer.domElement.style.pointerEvents = 'none';
-document.body.appendChild(htmlrenderer.domElement);
 
 const scene = new THREE.Scene();
 const createScene = new THREE.Scene();
@@ -176,7 +210,9 @@ const cam = new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,
 
 const interactionManager = new InteractionManager(renderer, cam, canvas);
 
-cam.position.z = 30;
+cam.position.x = -8
+cam.position.y = 200
+cam.position.z = 28;
 
 //Debug Tools
 const controls = new OrbitControls(cam, renderer.domElement);
@@ -192,13 +228,206 @@ scene.add(axesHelper);
 const light = new THREE.PointLight(0xffffff, 1, 100);
 light.position.set(0,0,0);
 scene.add(light);
-
+let ambientLight = new THREE.AmbientLight(new THREE.Color('hsl(0, 0%, 100%)'), 0.75);
+createScene.add(ambientLight);
 // Central Object (size, height of the column, material, mesh)
+let curr_center;
+
+const fileInput = document.getElementById('modelInput');
+const filePlanetInput = document.getElementById('modelPlanetInput');
+
+// Initialize GLTFLoader (or any other loader)
+const loader = new GLTFLoader();
 
 const sunGeo = new THREE.SphereGeometry(10,32,32);
 const sunMat = new THREE.MeshBasicMaterial({color:0xffff00});
 const sun = new THREE.Mesh(sunGeo, sunMat);
+const sun2 = new THREE.Mesh(sunGeo, sunMat);
 scene.add(sun);
+let model = sun2;
+
+// Function to load model when file is selected
+fileInput.addEventListener('change', function (event) {
+	const file = event.target.files[0];
+	if (file) {
+		const reader = new FileReader();
+		reader.readAsArrayBuffer(file);
+		reader.onload = function (e) {
+			const arrayBuffer = e.target.result;
+
+			// Load the GLTF model
+			loader.parse(arrayBuffer, '', function (gltf) {
+				if (model) createScene.remove(model); // Remove existing model
+				interactionManager.add(model)
+				interactionManager.remove(newButtonMesh)
+				interactionManager.remove(loadButtonMesh)
+				model.addEventListener('click',()=>{
+					centreFolder.show();
+				})
+				createScene.remove(sun2);
+				model = gltf.scene;
+				createScene.add(model);
+				return model;
+			});
+		};
+	}
+});
+
+filePlanetInput.addEventListener('change',(event)=>{
+	const file = event.target.files[0];
+	if (file) {
+		const reader = new FileReader();
+		reader.readAsArrayBuffer(file);
+		reader.onload = function (e) {
+			const arrayBuffer = e.target.result;
+
+			// Load the GLTF model
+			loader.parse(arrayBuffer, '', function (gltf) {
+				planets[planetIndex].removeMesh(planets[planetIndex].mesh)
+				planets[planetIndex].removeMesh(planets[planetIndex].getHorTubeMesh);
+				planets[planetIndex].removeMesh(planets[planetIndex].getVerTubeMesh);
+				let m = gltf.scene
+				planets[planetIndex].setPlanetMesh = m;
+				planets[planetIndex].createMesh()
+			});
+		};
+	}
+})
+
+// Parameters object to control the column and central object
+const guiCenterControls = {
+	columnHeight: 30,
+	columnColor: '#ffd700',
+	loadModel: function () { document.getElementById('modelInput').click();}, // Trigger file input
+	addPlanet: function () {
+		const mercuryOrbit = new Orbit(.4*astronomical_unit_conversion,7.005,29.124,0.2056,48.331)
+		const body = new Body(createScene.children[0],new THREE.Mesh(new THREE.SphereGeometry(3,32,32),new THREE.MeshBasicMaterial({color:0x333333})),0x333333,64,0,0.01,mercuryOrbit,"Sample")
+		interactionManager.add(body.getPlanetMesh);
+		body.getPlanetMesh.addEventListener("click",()=>{
+			console.log("Change the Planet's Parameters")
+			centreFolder.hide()
+			planetFolder.show()
+			planetIndex = planets.indexOf(body);
+		})
+		body.createMesh()
+		body.createOrbit()
+		planets.push(body);
+	}
+};
+
+const guiPlanetControls = {
+	name: "Planet",               // Name of the object
+	position: 0,                  // Position (value from 0 to 33)
+	scale: 1,
+	semiMajorAxis: 1.5,           // Semi-major axis (AU or other unit)
+	orbitalInclination: 0,        // Orbital inclination (degrees)
+	argumentOfPerigee: 0,         // Argument of perigee (degrees)
+	eccentricity: 0.0167,         // Eccentricity (unitless)
+	ascensionNode: 0,             // Ascension node (degrees)
+	columnColor: '#333333',
+	radius:1,
+	pause: function(){
+		if(planets[planetIndex].getAcc !== 0){
+			prevAcc[planetIndex] = planets[planetIndex].getAcc
+			planets[planetIndex].setAcc = 0
+		}else{
+			planets[planetIndex].setAcc = prevAcc[planetIndex]
+		}
+		
+	},
+	loadModel: function () { document.getElementById('modelPlanetInput').click(); }, // Trigger file input
+	addMoon: function () {
+		const mercuryOrbit = new Orbit(this.semiMajorAxis*astronomical_unit_conversion,this.orbitalInclination,this.argumentOfPerigee,this.eccentricity,this.ascensionNode)
+		const body = new Body(planets[planetIndex].getPlanetMesh,new THREE.Mesh(new THREE.BoxGeometry(1,1,1,32,32,32),new THREE.MeshBasicMaterial({color:0x333333})),0x333333,32,0,0.01,mercuryOrbit,"Sample")
+		interactionManager.add(body.getPlanetMesh);
+		body.getPlanetMesh.addEventListener("click",()=>{
+			console.log("Change the Planet's Parameters")
+
+		})
+		body.createMesh()
+		body.createOrbit()
+		moons.push(body);
+	}
+};
+
+
+const centreFolder = gui.addFolder("Centre's Properties");
+const planetFolder = gui.addFolder("Planet's Properties");
+
+// Add button to load model
+centreFolder.add(guiCenterControls, 'loadModel').name('Change 3D Model');
+
+centreFolder.hide()
+planetFolder.hide()
+// Column Controls (Height and Color)
+centreFolder.add(guiCenterControls, 'columnHeight', 1, 100).name('Column Height').onChange(value => {
+
+	sunSupport.scale.set(1, value / 30, 1); // Scale the height of the column
+	sunSupport.position.set(0,-value/2,0);
+
+});
+centreFolder.add(guiCenterControls, 'addPlanet').name("Create A Planet");
+centreFolder.addColor(guiCenterControls, 'columnColor').name('Column Color').onChange(value => {
+	sunSupport.material.color.set(value)
+});
+
+planetFolder.add(guiPlanetControls, 'name').name('Name').onChange(value => {
+	planets[planetIndex].setName = value
+});
+planetFolder.add(guiPlanetControls, 'scale',0, 10).name('Scale').onChange(value => {
+	planets[planetIndex].getPlanetMesh.scale.set(value,value,value)
+});
+planetFolder.add(guiPlanetControls, 'position', 0, 33).name('Position').onChange(value => {
+	planets[planetIndex].setPos = value
+	planets[planetIndex].removeMesh(planets[planetIndex])
+	planets[planetIndex].removeMesh(planets[planetIndex].getHorTubeMesh)
+	planets[planetIndex].removeMesh(planets[planetIndex].getVerTubeMesh)
+	planets[planetIndex].createMesh();
+});
+
+// Orbital Parameters
+planetFolder.add(guiPlanetControls, 'semiMajorAxis', 0.1, 10).name('Semi-Major Axis').onChange(value =>{
+	planets[planetIndex].orbit.setSMA = value*astronomical_unit_conversion;
+	planets[planetIndex].removeMesh(planets[planetIndex].getOrbitalLine)
+	planets[planetIndex].createOrbit()
+});
+planetFolder.add(guiPlanetControls, 'orbitalInclination', 0, 360).name('Orbital Inclination').onChange(value =>{
+	planets[planetIndex].orbit.setOI = value;
+	planets[planetIndex].removeMesh(planets[planetIndex].getOrbitalLine)
+	planets[planetIndex].createOrbit()
+});
+planetFolder.add(guiPlanetControls, 'argumentOfPerigee', 0, 360).name('Argument of Perigee').onChange(value =>{
+	planets[planetIndex].orbit.setAOP = value;
+	planets[planetIndex].removeMesh(planets[planetIndex].getOrbitalLine)
+	planets[planetIndex].createOrbit()
+});
+planetFolder.add(guiPlanetControls, 'eccentricity', 0, 1).name('Eccentricity').onChange(value =>{
+	planets[planetIndex].orbit.setE = value;
+	planets[planetIndex].removeMesh(planets[planetIndex].getOrbitalLine)
+	planets[planetIndex].createOrbit()
+});
+planetFolder.add(guiPlanetControls, 'ascensionNode', 0, 360).name('Ascension Node').onChange(value =>{
+	planets[planetIndex].orbit.setAN = value;
+	planets[planetIndex].removeMesh(planets[planetIndex].getOrbitalLine)
+	planets[planetIndex].createOrbit()
+});
+
+// Column Controls (Height and Color)
+planetFolder.addColor(guiPlanetControls, 'columnColor').name('Column Color').onChange(value => {
+	planets[planetIndex].setColor = value
+	planets[planetIndex].getPlanetMesh.material.color.set(value)
+	planets[planetIndex].removeMesh(planets[planetIndex].getPlanetMesh);
+	planets[planetIndex].removeMesh(planets[planetIndex].getHorTubeMesh);
+	planets[planetIndex].removeMesh(planets[planetIndex].getVerTubeMesh);
+	planets[planetIndex].removeMesh(planets[planetIndex].getOrbitalLine);
+	planets[planetIndex].createMesh()
+	planets[planetIndex].createOrbit()
+});
+
+// Add control for loading a model for the central object
+planetFolder.add(guiPlanetControls, 'loadModel').name('Load Planet Object');
+planetFolder.add(guiPlanetControls, 'pause').name('Pause Movement');
+
 
 const sunSupportGeo = new THREE.CylinderGeometry(.5,.5,30,32,32);
 const sunSupportMat = new THREE.MeshBasicMaterial({color:0xffd700});
@@ -214,7 +443,7 @@ const newButtonMat = new THREE.MeshBasicMaterial({color:0x555555});
 const newButtonMesh = new THREE.Mesh(newButtonGeo, newButtonMat)
 newButtonMesh.rotateX(Math.PI/2)
 const newButtonOrbit = new Orbit(1.5*astronomical_unit_conversion,7.005,29.124,0,48.331)
-const newButton = new Body(sun,newButtonMesh,32,0,0.01,newButtonOrbit,"NewButton");
+const newButton = new Body(sun,newButtonMesh,0x555555,32,0,0.01,newButtonOrbit,"NewButton");
 newButton.createMesh();
 newButton.createOrbit()
 
@@ -223,44 +452,12 @@ const loadButtonMat = new THREE.MeshBasicMaterial({color:0x555555});
 const loadButtonMesh = new THREE.Mesh(loadButtonGeo, loadButtonMat)
 loadButtonMesh.rotateX(Math.PI/2)
 const loadButtonOrbit = new Orbit(3*astronomical_unit_conversion,10,29.124,0,48.331)
-const loadButton = new Body(sun,loadButtonMesh,32,0,-0.005,loadButtonOrbit,"NewButton");
+const loadButton = new Body(sun,loadButtonMesh,0x555555,32,1,-0.005,loadButtonOrbit,"LoadButton");
 loadButton.createMesh();
 loadButton.createOrbit()
 
-const btn = document.createElement('button');
-const btnMesh = new CSS2DObject(btn);
-const modal = document.getElementById("centralObjectModal");
-const closeModal = document.getElementById("closeModal");
 
-closeModal.onclick = function() {
-	modal.style.display = "none";
-	createScene.add(btnMesh);
-}
-window.onclick = function(event) {
-	if (event.target === modal) {
-	  modal.style.display = "none";
-	  createScene.add(btnMesh);
-	}
-}
-const form = document.getElementById("centralObjectForm");
-form.onsubmit = function(event) {
-	event.preventDefault();
-	const size = document.getElementById("size").value;
-	const height = document.getElementById("height").value;
-	const texture = document.getElementById("texture").files[0];
-	const model = document.getElementById("model").files[0];
 
-	console.log("Central Object Properties:");
-	console.log("Size (Radius):", size);
-	console.log("Height of Column:", height);
-	console.log("Texture File:", texture);
-	console.log("Model File:", model);
-
-	// Process the input data as needed (e.g., apply changes in Three.js scene)
-
-	// Close the modal after submission
-	modal.style.display = "none";
-}
 
 fontLoader.load('./fonts/League Spartan_Regular.json', function(font){
 	const createText = new TextGeometry( "Create\n Orrery", {
@@ -317,16 +514,14 @@ fontLoader.load('./fonts/League Spartan_Regular.json', function(font){
 newButtonMesh.addEventListener('click',(event)=>{
 	console.log("Create")
 	sceneIndex = 1
-	renderer.setClearColor(0xffffff);
 	console.log("Hi")
-	btn.addEventListener("click",()=>{
-		createScene.remove(btnMesh)
-		modal.style.display = "flex";
+	createScene.add(light)
+	createScene.add(sun2);
+	interactionManager.add(sun2)
+	sun2.addEventListener('click',()=>{
+		centreFolder.show();
 	})
-	btn.textContent = "Create Central Object";
-
-	createScene.add(btnMesh);
-	htmlrenderer.domElement.style.pointerEvents = 'all';
+	createScene.add(sunSupport);
 })
 loadButtonMesh.addEventListener('click',(event)=>{
 	console.log("Load")
@@ -334,6 +529,8 @@ loadButtonMesh.addEventListener('click',(event)=>{
 })
 interactionManager.add(newButtonMesh);
 interactionManager.add(loadButtonMesh);
+
+
 
 //Instantiate the planets
 // const mercuryOrbit = new Orbit(.4*astronomical_unit_conversion,7.005,29.124,0.2056,48.331)
@@ -377,9 +574,12 @@ function animate(){
 	newButton.propagate()
 	loadButton.propagate()
 	interactionManager.update();
+	planets.forEach((planet)=>{
+		planet.propagate()
+	})
+	//console.log(cam.position)
 	controls.update();
 	renderer.render(scenes[sceneIndex], cam);
-	htmlrenderer.render(scenes[sceneIndex], cam);
 }
 
 animate();
