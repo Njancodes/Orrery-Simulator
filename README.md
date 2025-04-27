@@ -18,7 +18,6 @@ It was created with the Three.js framework used for handling the rendering of 3D
 1. Download the repository
 2. Run this command
 ```
-cd orrery-sim
 npm install
 npm run dev
 ```
